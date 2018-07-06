@@ -1,0 +1,32 @@
+{
+  "name": "dropboxdown",
+  "version": "0.0.1",
+  "description": "A Dropbox implementation of LevelDOWN",
+  "author": "Practical Porpoise",
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "test": "node -r dotenv/config -r isomorphic-fetch test.js"
+  },
+  "keywords": [
+    "leveldb",
+    "leveldown",
+    "levelup",
+    "dropbox",
+    "pouchdb"
+  ],
+  "dependencies": {
+    "abstract-leveldown": "^5.0.0",
+    "dropbox": "^4.0.7"
+  },
+  "devDependencies": {
+    "dotenv": "^6.0.0",
+    "isomorphic-fetch": "^2.2.1",
+    "prettier": "^1.13.7",
+    "rimraf": "^2.6.2",
+    "tape": "^4.9.1"
+  },
+  "engines": {
+    "node": ">=8.6"
+  }
+}

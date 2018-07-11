@@ -30,7 +30,7 @@ DropboxDOWN.prototype._open = function(options, cb) {
   if (options.accessToken) {
     this.configure(options)
   }
-  setImmediate(cb)
+  setTimeout(cb)
 }
 
 DropboxDOWN.prototype._put = function(key, value, _options, cb) {
@@ -58,7 +58,7 @@ DropboxDOWN.prototype._del = function(key, _options, cb) {
 
 DropboxDOWN.prototype._batch = function(array, _options, cb) {
   if (array.length === 0) {
-    return setImmediate(cb)
+    return setTimeout(cb)
   }
 
   const putOrDel = one =>

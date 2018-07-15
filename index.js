@@ -2,17 +2,7 @@ const util = require('util')
 const AbstractLevelDOWN = require('abstract-leveldown').AbstractLevelDOWN
 const Dropbox = require('dropbox').Dropbox
 
-function handleError(cb) {
-  return err => {
-    if (err.response && err.response.statusText && err.response.statusText.match(/not_found/)) {
-      cb(new Error('NotFound'))
-    } else if (err.error && err.error.error_status && err.error.error_status.match(/not_found/)) {
-      cb(new Error('NotFound'))
-    } else {
-      cb()
-    }
-  }
-}
+const { groupBy, serialPromise } = require('./utils')
 
 function DropboxDOWN(_name, overrideOpts) {
   if (!(this instanceof DropboxDOWN)) return new DropboxDOWN(_name, overrideOpts)
@@ -40,13 +30,8 @@ DropboxDOWN.prototype._put = function(key, value, _options, cb) {
 }
 
 DropboxDOWN.prototype._get = function(key, options, cb) {
-  const binOrString = file => {
-    const value = options.asBuffer !== false ? file.fileBinary : file.fileBinary.toString()
-    cb(null, value)
-  }
-
   this.download(key)
-    .then(binOrString)
+    .then(readFile(options.asBuffer, result => cb(null, result)))
     .catch(handleError(cb))
 }
 
@@ -66,15 +51,10 @@ DropboxDOWN.prototype._batch = function(array, _options, cb) {
       ? this.delete(one.key).catch(() => cb())
       : this.upload(one.key, one.value).catch(handleError(cb))
 
-  // Execute each call serially
-  // TODO - optimize
-  let promise = Promise.resolve()
-
-  for (let i = 0; i < array.length; i++) {
-    promise = promise.then(() => putOrDel(array[i]))
-  }
-
-  promise.then(() => cb())
+  // Make sure operations for the same id are handled serially and in order,
+  // run everything else in parallel.
+  const groups = groupBy(array, '_id')
+  Promise.all(Object.values(groups).map(docs => serialPromise(docs, putOrDel))).then(() => cb())
 }
 
 DropboxDOWN.prototype.download = function(key) {
@@ -104,3 +84,31 @@ DropboxDOWN.prototype.configure = function(opts) {
 }
 
 module.exports = DropboxDOWN
+
+function readFile(asBuffer, cb) {
+  return file => {
+    if (file.fileBinary) {
+      cb(asBuffer !== false ? file.fileBinary : file.fileBinary.toString())
+    } else if (file.fileBlob) {
+      const readAs = asBuffer !== false ? 'readAsArrayBuffer' : 'readAsText'
+      const reader = new FileReader()
+      reader.onloadend = () => cb(reader.result)
+      reader[readAs](file.fileBlob)
+    } else {
+      cb(new Error('Unknown file type'))
+    }
+  }
+}
+
+function handleError(cb) {
+  return err => {
+    let msg = 'Unknown Error'
+    if (
+      (err.response && err.response.statusText && err.response.statusText.match(/not_found/)) ||
+      (err.error && err.error.error_status && err.error.error_status.match(/not_found/))
+    ) {
+      msg = 'NotFound'
+    }
+    cb(new Error(msg))
+  }
+}

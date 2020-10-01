@@ -52,4 +52,4 @@ db.put('foo', 'bar')
 
 ## License
 
-[MIT](./LICENSE) © 2018-present [Practical Porpoise](https://github.com/maxogden).
+[MIT](./LICENSE) © 2018-present [Practical Porpoise](https://github.com/practicalporpoise).
